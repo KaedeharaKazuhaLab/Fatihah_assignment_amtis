@@ -1,3 +1,20 @@
+<?php
+// Function to get POST data and ensure it is a valid positive number
+function getPostData($key) {
+    return isset($_POST[$key]) && $_POST[$key] >= 0 ? $_POST[$key] : 0;
+}
+
+// Function to calculate Power in kW
+function calculatePower($voltage, $current) {
+    return ($voltage * $current) / 1000;  // Convert to kW
+}
+
+// Function to calculate the total charge for energy consumption
+function calculateCharge($power_kw, $rate, $hour) {
+    $energy = $power_kw * $hour;  // Energy in kWh
+    return $energy * $rate;  // Total charge in RM
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,18 +44,17 @@
 
         <?php
             if ($_SERVER["REQUEST_METHOD"] == "POST") {
-                // Get form inputs and validate
-                $voltage = isset($_POST['voltage']) ? $_POST['voltage'] : 0;
-                $current = isset($_POST['current']) ? $_POST['current'] : 0;
-                $rate = isset($_POST['rate']) ? $_POST['rate'] / 100 : 0;  // Convert to RM (sen to RM)
-                
-                // Check if the values are non-negative
+                // Get form data using PHP function
+                $voltage = getPostData('voltage');
+                $current = getPostData('current');
+                $rate = getPostData('rate') / 100;  // Convert to RM (sen to RM)
+
+                // Ensure all values are valid
                 if ($voltage < 0 || $current < 0 || $rate < 0) {
                     echo "<div class='alert alert-danger mt-4'>Please enter valid positive values for all fields.</div>";
                 } else {
-                    // Calculate Power (W)
-                    $power = $voltage * $current;  // Power in Watts (W)
-                    $power_kw = $power / 1000;  // Convert to kW
+                    // Calculate power in kW
+                    $power_kw = calculatePower($voltage, $current);
 
                     // Display Results
                     echo "<div class='mt-5'>";
@@ -50,10 +66,10 @@
                     echo "<table class='table table-bordered mt-3'>";
                     echo "<thead><tr><th>Hour</th><th>Energy (kWh)</th><th>Total (RM)</th></tr></thead><tbody>";
 
-                    // Loop through each hour
+                    // Loop through each hour of the day
                     for ($hour = 1; $hour <= 24; $hour++) {
-                        $energy = $power_kw * $hour;  // Energy in kWh
-                        $total_charge = $energy * $rate;  // Total charge in RM
+                        $total_charge = calculateCharge($power_kw, $rate, $hour);  // Calculate cost for each hour
+                        $energy = $power_kw * $hour;  // Energy consumption for each hour
                         echo "<tr><td>{$hour}</td><td>" . number_format($energy, 5) . "</td><td>RM " . number_format($total_charge, 2) . "</td></tr>";
                     }
 
